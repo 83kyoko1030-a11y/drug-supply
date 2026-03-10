@@ -142,6 +142,10 @@ def build_html(drug_data: list, label: str, generated_at: str) -> str:
     new_n   = sum(1 for r in drug_data if r[20] and r[20].strip())
     no_re   = sum(1 for r in drug_data if r[11] and "通常出荷" not in r[11] and r[14] == "ウ． 未定")
 
+    # f文字列内で {label} の後に ":" が続くとPythonがformat specifierと誤認するため
+    # JavaScriptのconst D行は文字列結合で別途生成する
+    js_d_line = 'const D={"label":"' + label + '","generated":"' + generated_at + '"};'
+
     html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -292,7 +296,7 @@ td{{padding:9px 11px;vertical-align:top}}
 </div>
 
 <script>
-const D={"{label}":"{label}","generated":"{generated_at}"};
+{js_d_line}
 const RAW={json_str};
 const SS={{"①通常出荷":{{c:"#15803d",b:"#f0fdf4",bd:"#86efac"}},
   "②限定出荷（自社の事情）":{{c:"#b45309",b:"#fffbeb",bd:"#fcd34d"}},
