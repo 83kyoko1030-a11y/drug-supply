@@ -146,6 +146,26 @@ def build_html(drug_data: list, label: str, generated_at: str) -> str:
     # JavaScriptのconst D行は文字列結合で別途生成する
     js_d_line = 'const D={"label":"' + label + '","generated":"' + generated_at + '"};'
 
+    # 採用薬リスト（scripts/adopted_drugs.csv から読み込み）
+    import csv as _csv, io as _io
+    ADOPTED_CSV = Path(__file__).parent / "adopted_drugs.csv"
+    adopted_yj = set()
+    if ADOPTED_CSV.exists():
+        with open(ADOPTED_CSV, 'rb') as f:
+            raw_csv = f.read()
+        try:
+            csv_text = raw_csv.decode('shift_jis')
+        except Exception:
+            csv_text = raw_csv.decode('utf-8', errors='replace')
+        for row in _csv.reader(_io.StringIO(csv_text)):
+            if len(row) > 16 and row[16].strip() and row[16].strip() != 'YJコード':
+                adopted_yj.add(row[16].strip())
+            if len(row) > 2 and row[2].strip() and row[2].strip() != '厚労省コード':
+                adopted_yj.add(row[2].strip())
+    adopted_json = json.dumps(sorted(list(adopted_yj)), ensure_ascii=False, separators=(',', ':'))
+    adopted_count = sum(1 for r in drug_data if r[4] in adopted_yj)
+    js_adopted_line = 'const ADOPTED=new Set(' + adopted_json + ');'
+
     html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -240,6 +260,8 @@ td{{padding:9px 11px;vertical-align:top}}
       <div class="num">{stop:,}</div><div class="lbl">供給停止</div></button>
     <button class="card" style="color:#7c3aed;background:#f5f3ff;border-color:#c4b5fd;cursor:default">
       <div class="num">{no_re:,}</div><div class="lbl">解消未定</div></button>
+    <button class="card" onclick="tc('adoptedOnly')" style="color:#0f766e;background:#f0fdfa;border-color:#5eead4">
+      <div class="num">{adopted_count:,}</div><div class="lbl">採用薬のみ</div></button>
   </div>
 
   <div class="filters">
@@ -263,6 +285,7 @@ td{{padding:9px 11px;vertical-align:top}}
     </select>
     <label class="chk"><input type="checkbox" id="newOnly" onchange="af()"> 今回更新のみ</label>
     <label class="chk"><input type="checkbox" id="alertOnly" onchange="af()"> 要注意のみ</label>
+    <label class="chk"><input type="checkbox" id="adoptedOnly" onchange="af()"> 採用薬のみ</label>
     <button class="rbtn" onclick="rf()">リセット</button>
     <span class="ci" id="ci"></span>
   </div>
@@ -297,6 +320,7 @@ td{{padding:9px 11px;vertical-align:top}}
 
 <script>
 {js_d_line}
+{js_adopted_line}
 const RAW={json_str};
 const SS={{"①通常出荷":{{c:"#15803d",b:"#f0fdf4",bd:"#86efac"}},
   "②限定出荷（自社の事情）":{{c:"#b45309",b:"#fffbeb",bd:"#fcd34d"}},
@@ -331,6 +355,7 @@ function af(){{
   const rf2=document.getElementById("reaF").value;
   const no=document.getElementById("newOnly").checked;
   const ao=document.getElementById("alertOnly").checked;
+  const ad=document.getElementById("adoptedOnly").checked;
   filtered=RAW.filter(r=>{{
     if(q&&!((r[5]||"").toLowerCase().includes(q)||(r[2]||"").toLowerCase().includes(q)||(r[6]||"").toLowerCase().includes(q)||(r[4]||"").includes(q)))return false;
     if(sf&&r[11]!==sf)return false;
@@ -338,6 +363,7 @@ function af(){{
     if(rf2&&r[13]!==rf2)return false;
     if(no&&!(r[20]&&r[20].trim()))return false;
     if(ao&&!ia(r[11]))return false;
+    if(ad&&!ADOPTED.has(r[4]))return false;
     return true;
   }});
   filtered.sort((a,b)=>{{
@@ -365,6 +391,7 @@ function rf(){{
   document.getElementById("reaF").value="";
   document.getElementById("newOnly").checked=false;
   document.getElementById("alertOnly").checked=false;
+  document.getElementById("adoptedOnly").checked=false;
   af();
 }}
 function rt(){{
@@ -383,7 +410,7 @@ function rt(){{
       <td>${{vs?`<span class="tag" style="background:${{vs.b}};color:${{vs.c}}">${{r[16]}}</span>`:`<span style="font-size:10px;color:#94a3b8">${{r[16]||'―'}}</span>`}}</td>
       <td style="font-size:10px;color:#475569;max-width:150px"><div style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${{r[13]==='７．ー'||!r[13]?'―':r[13]}}</div></td>
       <td style="font-size:10px;white-space:nowrap;color:${{r[14]==='ウ． 未定'?'#7c3aed':r[14]==='ア． あり'?'#15803d':'#475569'}}">${{r[14]&&r[14]!=='エ． －'?r[14]:'―'}}${{r[15]?'<br><span style="color:#94a3b8;font-size:9px">'+r[15]+'</span>':''}}</td>
-      <td style="text-align:center">${{isn?`<span class="nb">New</span>`:'<span style="color:#d1d5db;font-size:9px">―</span>'}}</td>
+      <td style="text-align:center">${{isn?`<span class="nb">New</span>`:'<span style="color:#d1d5db;font-size:9px">―</span>'}}${{ADOPTED.has(r[4])?`<br><span style="background:#f0fdfa;color:#0f766e;border:1px solid #5eead4;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:900">採用</span>`:''}}</td>
     </tr>`;
   }}).join("");
 }}
