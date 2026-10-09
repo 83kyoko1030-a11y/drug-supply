@@ -204,3 +204,4 @@
 2026-10-06 13:00 JST | 医療用医薬品供給状況（令和８年10月５日現在） | 16408 品目 | https://www.mhlw.go.jp/content/10800000/261005iyakuhinkyoukyu.xlsx
 2026-10-07 12:27 JST | 医療用医薬品供給状況（令和８年10月６日現在） | 16409 品目 | https://www.mhlw.go.jp/content/10800000/261006iyakuhinkyoukyu.xlsx
 2026-10-08 12:42 JST | 医療用医薬品供給状況（令和８年10月７日現在） | 16409 品目 | https://www.mhlw.go.jp/content/10800000/261007iyakuhinkyoukyu.xlsx
+2026-10-09 12:48 JST | 医療用医薬品供給状況（令和８年10月８日現在） | 16409 品目 | https://www.mhlw.go.jp/content/10800000/261008iyakuhinkyoukyu.xlsx
